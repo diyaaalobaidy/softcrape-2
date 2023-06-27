@@ -184,14 +184,14 @@ def save_post(post):
     headers={
         "Content-Type":"application/json"
     }
-    post=request(method="POST", url="http://localhost:45678/post",json_data=post,headers=headers, use_tor=False).json()
+    post=request(method="POST", url="http://localhost:45679/post",json_data=post,headers=headers, use_tor=False).json()
     return post
 
 def save_page(page):
     headers={
         "Content-Type":"application/json"
     }
-    page=request(method="POST", url="http://localhost:45678/page",json_data=page,headers=headers, use_tor=False).json()
+    page=request(method="POST", url="http://localhost:45679/page",json_data=page,headers=headers, use_tor=False).json()
     return page
 
 def extract_next_cursor(raw_data_lines):
@@ -255,7 +255,7 @@ def stop_target(_id):
     params={
         "tracker_id": _id
     }
-    page=request(method="DELETE", url="http://localhost:45678/tracker", params=params,headers=headers, use_tor=False).json()
+    page=request(method="DELETE", url="http://localhost:45679/tracker", params=params,headers=headers, use_tor=False).json()
     return page
 
 if __name__=="__main__":

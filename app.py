@@ -204,4 +204,4 @@ for i in range(number_of_threads):
     Thread(target=get_next_batch,args=(i,number_of_threads)).start()
 
 if __name__=="__main__":
-    app.run("localhost",45678)
+    app.run("localhost",45679)
