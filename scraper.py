@@ -28,6 +28,7 @@ def request(*, method="GET", url:str, data={}, headers={}, params={}, json_data=
             session.proxies=create_proxy()
         else:
             session.proxies=None
+            print("requesting to {}".format(url))
         try:
             return session.request(method=method, url=url, data=data, json=json_data, headers=headers, params=params, timeout=20)
         except:
