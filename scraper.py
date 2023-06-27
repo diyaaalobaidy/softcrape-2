@@ -9,7 +9,7 @@ import re
 from bs4 import BeautifulSoup
 
 base_url="https://www.facebookwkhpilnemxj7asaniu7vnjjbiltxjqhye3mhbshg7kx5tfyd.onion"
-tor_port=9150
+tor_port=9050
 session=requests.Session()
 
 class FakeResponse:
