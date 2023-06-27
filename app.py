@@ -10,7 +10,7 @@ from scraper import get_page_info, scrape_page_posts, scrape_page_videos
 
 app=Flask("SOFTCRAPE")
 
-app.config['SQLALCHEMY_DATABASE_URI']="postgresql://postgres:postgres@localhost:5432/softcrape"#"sqlite:///test.db"
+app.config['SQLALCHEMY_DATABASE_URI']="postgresql://postgres:postgres@localhost:5432/softcrape_new"#"sqlite:///test.db"
 db=SQLAlchemy(app)
 class BaseModel(db.Model):
     __abstract__=True
