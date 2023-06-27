@@ -1,0 +1,1 @@
+gunicorn -b 0.0.0.0:45679 -w 5 "app:app"
