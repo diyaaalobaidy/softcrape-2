@@ -12,6 +12,9 @@ base_url="https://www.facebookwkhpilnemxj7asaniu7vnjjbiltxjqhye3mhbshg7kx5tfyd.o
 tor_port=9150
 session=requests.Session()
 
+class FakeResponse:
+    status_code=0
+
 def create_proxy():
     return {
         "http": "socks5h://{}:foo@localhost:{}".format(randint(100000,999999),tor_port),
@@ -29,6 +32,8 @@ def request(*, method="GET", url:str, data={}, headers={}, params={}, json_data=
             return session.request(method=method, url=url, data=data, json=json_data, headers=headers, params=params, timeout=20)
         except:
             retries-=1
+            continue
+    return FakeResponse()
 
 def get_page_info(page_unique_identifier:str):
     url="{}/{}".format(base_url,page_unique_identifier)

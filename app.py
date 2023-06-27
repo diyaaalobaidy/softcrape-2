@@ -193,7 +193,7 @@ def facebook_target_starter(app:Flask):
                 target.delete()
                 get_page_info(page_identifier)
             except:
-                Target(target=page_identifier, target_type="facebook")
+                Target(target=page_identifier, target_type="facebook").save()
 
 scheduler=BackgroundScheduler()
 scheduler.add_job(start_trackers, args=(app,), trigger="interval", seconds=5)
