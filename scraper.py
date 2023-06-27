@@ -205,7 +205,7 @@ def extract_next_cursor(raw_data_lines):
             if line.get('data',{}).get('node',{}).get('all_videos',{}).get('page_info',{}).get('has_next_page',False):
                 return line.get('data',{}).get('node',{}).get('all_videos',{}).get('page_info',{}).get('end_cursor')
 
-def scrape_page_posts(page_id, period=3):
+def scrape_page_posts(page_id, period=7):
     try:
         count=0
         next_cursor=""
@@ -227,7 +227,7 @@ def scrape_page_posts(page_id, period=3):
     except Exception as e:
         print(e)
         
-def scrape_page_videos(page_id, period=3):
+def scrape_page_videos(page_id, period=7):
     try:
         count=0
         next_cursor=''

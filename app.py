@@ -43,7 +43,7 @@ class Page(BaseModel):
     page_url=db.Column(db.String, nullable=False)
     page_image=db.Column(db.String)
     tracker_enabled=db.Column(db.Boolean, default=True)
-    tracker_period=db.Column(db.Integer, default=3)
+    tracker_period=db.Column(db.Integer, default=7)
     
     def get_json(self):
         return{
@@ -199,7 +199,7 @@ scheduler=BackgroundScheduler()
 scheduler.add_job(start_trackers, args=(app,), trigger="interval", seconds=5)
 scheduler.add_job(facebook_target_starter, args=(app,), trigger="interval", seconds=5, max_instances=5)
 scheduler.start()
-number_of_threads=3
+number_of_threads=5
 for i in range(number_of_threads):
     Thread(target=get_next_batch,args=(i,number_of_threads)).start()
 
