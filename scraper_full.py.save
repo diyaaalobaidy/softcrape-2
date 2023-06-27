@@ -1,0 +1,283 @@
+import datetime
+import json
+import os
+from random import randint
+import requests
+from urllib import parse
+import re
+from bs4 import BeautifulSoup
+
+from sqlalchemy.orm import declarative_base, relationship, sessionmaker
+from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, String, create_engine
+
+engine=create_engine("sqlite:///test.db")
+Session=sessionmaker(engine)
+db_session=Session()
+db=declarative_base()
+class BaseModel(db):
+    __abstract__=True
+    created_at=Column(DateTime, default=datetime.datetime.now)
+    
+    def save(self):
+        db_session.add(self)
+        try:
+            db_session.commit()
+        except:
+            db_session.rollback()
+
+class Page(BaseModel):
+    __tablename__="facebook_pages"
+    
+    page_id=Column(Integer, primary_key=True)
+    page_id_2=Column(Integer, unique=True)
+    page_name=Column(String, nullable=False)
+    page_url=Column(String, nullable=False)
+    page_image=Column(String)
+
+class Post(BaseModel):
+    __tablename__="facebook_posts"
+    
+    post_id=Column(Integer, primary_key=True)
+    publish_time=Column(DateTime, nullable=False)
+    message=Column(String)
+    comments=Column(Integer, default=0)
+    views=Column(Integer, default=0)
+    shares=Column(Integer, default=0)
+    reactions=Column(JSON, default={})
+    post_type=Column(String)
+    page_id=Column(Integer, ForeignKey("facebook_pages.page_id"))
+    page=relationship("Page", foreign_keys=[page_id])
+
+    def get_json(self) -> dict:
+        return {
+            "post_id": self.post_id,
+            "publish_time": self.publish_time.isoformat(" "),
+            "message": self.message,
+            "comments": self.comments,
+            "views": self.views,
+            "shares": self.shares,
+            "reactions": self.reactions,
+        }
+
+BaseModel.metadata.create_all(engine)
+
+base_url="https://www.facebookwkhpilnemxj7asaniu7vnjjbiltxjqhye3mhbshg7kx5tfyd.onion"
+
+session=requests.Session()
+
+def create_proxy():
+    return {
+        "http": "socks5h://{}:foo@localhost:9150".format(randint(100000,999999)),
+        "https": "socks5h://{}:foo@localhost:9150".format(randint(100000,999999)),
+    }
+
+def request(*, method="GET", url, data={}, headers={}, params={}):
+    session.proxies=create_proxy()
+    return session.request(method=method, url=url, data=data, headers=headers, params=params, timeout=20)
+
+def get_page_info(page_unique_identifier:str):
+    url="{}/{}".format(base_url,page_unique_identifier)
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; rv:102.0) Gecko/20100101 Firefox/102.0',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
+        'TE': 'trailers'
+    }
+    response = request(url=url, headers=headers)
+    page_id_regex=re.compile(r"(user|page).{0,1}id.{1,5}?(\d{5,})",re.IGNORECASE)
+    page_id=page_id_regex.search(response.text)
+    page_id=page_id.groups()[-1]
+    page_id_2_regex=re.compile(r"(associated_page_id).{1,5}?(\d{5,})",re.IGNORECASE)
+    page_id_2=page_id_2_regex.search(response.text)
+    page_id_2=page_id_2.groups()[-1]
+    page_name=BeautifulSoup(response.text,"html.parser").find("meta", {"property": "og:title"}).attrs.get('content')
+    return{
+        "page_name": page_name,
+        "page_id": int(page_id),
+        "page_id_2": int(page_id_2),
+        "page_url": "https://facebook.com/{}".format(page_id)
+    }
+
+def fetch_posts_data(page_id, cursor="", doc_id=6388659591195017):
+    status=0
+    retries=8
+    while status != 200 and retries:
+        url = "{}/api/graphql/".format(base_url)
+        variables=json.dumps({"count":3,"cursor":cursor,"privacySelectorRenderLocation":"COMET_STREAM","scale":1,"id":page_id}).replace(" ","")
+        payload = 'variables={}&doc_id={}'.format(parse.quote(variables),doc_id)
+        headers = {
+            'authority': 'www.facebook.com',
+            'accept': '*/*',
+            'accept-language': 'en,en-US;q=0.9',
+            'content-type': 'application/x-www-form-urlencoded',
+            'origin': '{}'.format(base_url),
+            'referer': '{}/FMalghad/'.format(base_url),
+            'sec-ch-prefers-color-scheme': 'dark',
+            'sec-ch-ua': '"Google Chrome";v="113", "Chromium";v="113", "Not-A.Brand";v="24"',
+            'sec-ch-ua-full-version-list': '"Google Chrome";v="113.0.5672.63", "Chromium";v="113.0.5672.63", "Not-A.Brand";v="24.0.0.0"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"Windows"',
+            'sec-ch-ua-platform-version': '"15.0.0"',
+            'sec-fetch-dest': 'empty',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-site': 'same-origin',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36',
+            'x-fb-friendly-name': 'ProfileCometTimelineFeedRefetchQuery'
+        }
+        response = request(method="POST", url=url, headers=headers, data=payload)
+        status=response.status_code
+        retries-=1
+    return response
+
+def extract_posts(data:dict):
+    assert data
+    posts=list()
+    edges=data.get('data',{}).get('node',{}).get('timeline_list_feed_units',{}).get('edges',[])
+    for edge in edges:
+        try:
+            post_id=edge.get('node',{}).get('post_id')
+            metadata=edge.get('node',{}).get('comet_sections',{})
+            publish_time=datetime.datetime.fromtimestamp(int(metadata.get('context_layout',{}).get('story',{}).get('comet_sections',{}).get('metadata',[{}])[0].get('story',{}).get('creation_time',0)))
+            message=metadata.get('content',{}).get('story',{}).get('message',{}).get('text')
+            reactions_parent=metadata.get('feedback',{}).get('story',{}).get('feedback_context',{}).get('feedback_target_with_context',{}).get('ufi_renderer',{}).get('feedback',{}).get('comet_ufi_summary_and_actions_renderer',{}).get('feedback',{})
+            comments=reactions_parent.get('total_comment_count')
+            views=reactions_parent.get('video_view_count')
+            shares=reactions_parent.get('share_count',{}).get('count')
+            reactions_edges=reactions_parent.get('cannot_see_top_custom_reactions',{}).get('top_reactions',{}).get('edges',[])
+            reactions={}
+            for reaction_edge in reactions_edges:
+                reaction_count=reaction_edge.get('reaction_count',0)
+                reaction_name=reaction_edge.get('node',{}).get('localized_name','unknown')
+                reactions.update({
+                    reaction_name: int(reaction_count)
+                })
+            page=db_session.query(Page).filter_by(page_id=int(data.get('data',{}).get('node',{}).get('id'))).first()
+            new_post=Post(page=page, post_id=post_id, publish_time=publish_time, message=message, comments=comments, views=views, shares=shares, reactions=reactions)
+            posts.append(new_post)
+        except Exception as e:
+            print(e)
+    return posts
+
+def fetch_videos_data(page_id, cursor=None, doc_id="6123690421066719"):
+    if cursor=='':
+        cursor=None
+    status=0
+    retries=8
+    while status != 200 and retries:
+        url = "{}/api/graphql/".format(base_url)
+        variables=json.dumps({"cursor":cursor,"pageID":page_id,"showReactions":True,"id":page_id})
+        payload = 'fb_api_caller_class=RelayModern&fb_api_req_friendly_name=PagesCometChannelTabAllVideosCardImplPaginationQuery&variables={}&server_timestamps=true&doc_id={}'.format(parse.quote(variables),doc_id)
+        headers = {
+            'authority': 'www.facebook.com',
+            'accept': 'application/json',
+            'accept-language': 'en',
+            'content-type': 'application/x-www-form-urlencoded',
+            'origin': 'https://www.facebook.com',
+            'sec-fetch-site': 'same-origin',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36',
+            'x-fb-friendly-name': 'PagesCometChannelTabAllVideosCardImplPaginationQuery'
+        }
+        response = request(method="POST", url=url, headers=headers, data=payload)
+        status=response.status_code
+        retries-=1
+    return response
+
+def extract_videos(data:dict):
+    assert data
+    posts=[]
+    videos_edges=data.get('data',{}).get('node',{}).get('all_videos',{}).get('edges',[])
+    for edge in videos_edges:
+        try:
+            post_id=edge.get('node',{}).get('id')
+            message=edge.get('node',{}).get('channel_tab_thumbnail_renderer',{}).get('video',{}).get('savable_description',{}).get('text',None)
+            views=edge.get('node',{}).get('channel_tab_thumbnail_renderer',{}).get('video',{}).get('play_count',0)
+            reactions={}
+            reactions_edges=edge.get('node',{}).get('channel_tab_thumbnail_renderer',{}).get('video',{}).get('feedback',{}).get('cannot_see_top_custom_reactions',{}).get('top_reactions',{}).get('edges',[])
+            for reaction_edge in reactions_edges:
+                reaction_count=reaction_edge.get('reaction_count',0)
+                reaction_name=reaction_edge.get('node',{}).get('localized_name','unknown')
+                reactions.update({
+                    reaction_name: int(reaction_count)
+                })
+                publish_time=datetime.datetime.fromtimestamp(int(edge.get('node',{}).get('channel_tab_thumbnail_renderer',{}).get('video',{}).get('publish_time',0)))
+            comments=int(edge.get('node',{}).get('channel_tab_thumbnail_renderer',{}).get('video',{}).get('feedback',{}).get('comment_count_reduced',0))
+            page=db_session.query(Page).filter_by(page_id=int(data.get('data',{}).get('node',{}).get('id'))).first()
+            new_post=Post(page=page, post_id=post_id, publish_time=publish_time, message=message, comments=comments, views=views, shares=None, reactions=reactions)
+            posts.append(new_post)
+        except Exception as e:
+            print(e)
+    return posts
+
+
+def save_page(page):
+    page=Page(**page)
+    page.save()
+    return page
+
+def extract_next_cursor(raw_data_lines):
+    for line in raw_data_lines:
+        line=json.loads(line)
+        if line.get('label')=="ProfileCometTimelineFeed_user$defer$ProfileCometTimelineFeed_user_timeline_list_feed_units$page_info":
+            if line.get('data',{}).get('page_info',{}).get('has_next_page'):
+                return line.get('data',{}).get('page_info',{}).get('end_cursor')
+        else:
+            if line.get('data',{}).get('node',{}).get('all_videos',{}).get('page_info',{}).get('has_next_page',False):
+                return line.get('data',{}).get('node',{}).get('all_videos',{}).get('page_info',{}).get('end_cursor')
+
+def scrape_page_posts(page_unique_identifier):
+    try:
+        count=0
+        page=get_page_info(page_unique_identifier)
+        page=save_page(page)
+        next_cursor=""
+        stop=False
+        while next_cursor is not None and not stop:
+            try:
+                count+=1
+                print(count)
+                posts_raw_data=fetch_posts_data(page.page_id, cursor=next_cursor)
+                posts=extract_posts(json.loads(posts_raw_data.text.split("\n")[0]))
+                os.makedirs("results/{}".format(page_unique_identifier),exist_ok=True)
+                for post in posts:
+                    post.save()
+                    if post.publish_time.timestamp()<datetime.datetime.now().timestamp()-3600*24*120:
+                        stop=True
+                next_cursor=extract_next_cursor(posts_raw_data.text.split("\n"))
+            except Exception as e:
+                print(e)
+    except Exception as e:
+        print(e)
+        
+def scrape_page_videos(page_unique_identifier):
+    try:
+        count=0
+        page=get_page_info(page_unique_identifier)
+        page=save_page(page)
+        next_cursor=''
+        stop=False
+        while next_cursor is not None and not stop:
+            try:
+                count+=1
+                print(count)
+                posts_raw_data=fetch_videos_data(page.page_id_2, cursor=next_cursor)
+                posts=extract_videos(json.loads(posts_raw_data.text.split("\n")[0]))
+                os.makedirs("results/{}".format(page_unique_identifier),exist_ok=True)
+                for post in posts:
+                    post.save()
+                    if post.publish_time.timestamp()<datetime.datetime.now().timestamp()-3600*24*120:
+                        stop=True
+                next_cursor=extract_next_cursor(posts_raw_data.text.split("\n"))
+            except Exception as e:
+                print(e)
+    except Exception as e:
+        print(e)
+if __name__=="__main__":
+    for page_unique_identifier in ["964Arabic","alrasheedmedia","sharqiyatv","altaghiertv","Honaalbasraradio","Thiqari","964Arabic","kurdistan24.official","sul2024","AlANBARMDYNTYY","k24Arabic.Official"]:
+        scrape_page_videos(page_unique_identifier)
+	scrape_page_posts(page_unique_identifier)
