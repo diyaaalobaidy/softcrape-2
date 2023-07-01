@@ -185,14 +185,14 @@ def save_post(post):
     headers={
         "Content-Type":"application/json"
     }
-    post=request(method="POST", url="http://localhost:45679/post",json_data=post,headers=headers, use_tor=False).json()
+    post=request(method="POST", url="http://localhost:45679/facebook/post",json_data=post,headers=headers, use_tor=False).json()
     return post
 
 def save_page(page):
     headers={
         "Content-Type":"application/json"
     }
-    page=request(method="POST", url="http://localhost:45679/page",json_data=page,headers=headers, use_tor=False).json()
+    page=request(method="POST", url="http://localhost:45679/facebook/page",json_data=page,headers=headers, use_tor=False).json()
     return page
 
 def extract_next_cursor(raw_data_lines):
