@@ -296,11 +296,14 @@ class TrackerRoutes(Resource):
         request_data=request.json
         targets=request_data.get("target").split(",")
         target_type=request_data.get("type","facebook")
+        response=[]
         for target in targets:
             try:
-                Target(target=target, target_type=target_type).save()
+                new_target=Target(target=target, target_type=target_type)
+                new_target.save()
+                response.append(new_target.get_json())
             except: pass
-        return [t.get_json() for t in targets]
+        return response
 
 
     @tracker_ns.doc("Stop a tracker")
