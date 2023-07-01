@@ -83,7 +83,8 @@ class Post(BaseModel):
 
     def get_json(self) -> dict:
         return {
-            "page": self.page_id,
+            "page": self.page.get_json,
+            "page_id": self.page_id,
             "created_at": self.created_at.isoformat(" "),
             "post_id": self.post_id,
             "publish_time": self.publish_time.isoformat(" "),
@@ -109,8 +110,24 @@ with app.app_context():
 
 fb_ns=api.namespace("facebook", description="Facebook operations")
 
+page_field=api.model('Page', dict(
+    page_id=fields.String(description="Facebook page id"),
+    page_id_2=fields.String(description="Second Facebook page id"),
+    page_name=fields.String(description="Facebook page name"),
+    page_url=fields.String(description="Facebook page url"),
+))
+
+page_list_field=api.model('Pages', dict(
+    pages=fields.Nested(page_field, description="Facebook pages", as_list=True),
+    total=fields.Integer(description="Total count"),
+    fetched=fields.Integer(description="Fetched records count"),
+    page=fields.Integer(description="Current page"),
+    total_pages=fields.Integer(description="Total pages"),
+))
+
 post_field=api.model('Post', dict(
-    page=fields.String(description="Facebook page id"),
+    page=fields.Nested(page_field,description="Facebook page id"),
+    page_id=fields.String(description="Facebook page id"),
     created_at=fields.String(description="Timestamp of the post"),
     post_id=fields.String(description="Facebook post id"),
     publish_time=fields.String(description="Timestamp of the post"),
@@ -211,21 +228,6 @@ class PageRoutes(Resource):
             return post.get_json()
         fb_ns.abort(404, "Post with id {} not found".format(post_id))
 
-
-page_field=api.model('Page', dict(
-    page_id=fields.String(description="Facebook page id"),
-    page_id_2=fields.String(description="Second Facebook page id"),
-    page_name=fields.String(description="Facebook page name"),
-    page_url=fields.String(description="Facebook page url"),
-))
-
-page_list_field=api.model('Pages', dict(
-    pages=fields.Nested(page_field, description="Facebook pages", as_list=True),
-    total=fields.Integer(description="Total count"),
-    fetched=fields.Integer(description="Fetched records count"),
-    page=fields.Integer(description="Current page"),
-    total_pages=fields.Integer(description="Total pages"),
-))
 
 
 @fb_ns.route("/page")
