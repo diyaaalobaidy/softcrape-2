@@ -316,7 +316,7 @@ class TrackerRoutes(Resource):
         total=trackers.count()
         if limit>0:
             trackers=trackers.offset((page-1)*(limit)).limit(limit)
-        response=dict(trackers=[page.get_json() for page in trackers], total=total, fetched=trackers.count(), page=page, total_pages=math.ceil(total/limit))
+        response=dict(trackers=[tracker.get_json() for tracker in trackers], total=total, fetched=trackers.count(), page=page, total_pages=math.ceil(total/limit))
         return response
 
 
