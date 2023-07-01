@@ -83,6 +83,7 @@ class Post(BaseModel):
 
     def get_json(self) -> dict:
         return {
+            "page": self.page_id,
             "created_at": self.created_at.isoformat(" "),
             "post_id": self.post_id,
             "publish_time": self.publish_time.isoformat(" "),
@@ -110,6 +111,7 @@ fb_ns=api.namespace("facebook", description="Facebook operations")
 
 post_field=api.model('Post', dict(
     page=fields.String(description="Facebook page id"),
+    created_at=fields.String(description="Timestamp of the post"),
     post_id=fields.String(description="Facebook post id"),
     publish_time=fields.String(description="Timestamp of the post"),
     message=fields.String(description="The body of the post"),
