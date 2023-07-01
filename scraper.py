@@ -262,7 +262,7 @@ def stop_target(_id):
 if __name__=="__main__":
     tor_port=9150
     for page_unique_identifier in ["964kurdi","964english","964Arabic"]:
-        # "alrasheedmedia","sharqiyatv","altaghiertv","Honaalbasraradio","Thiqari","kurdistan24.official","sul2024","AlANBARMDYNTYY","k24Arabic.Official" 
+        # "alrasheedmedia","sharqiyatv","altaghiertv","Honaalbasraradio","Thiqari","kurdistan24.official","sul2024","AlANBARMDYNTYY","k24Arabic.Official" ,"964kurdi","964english","964Arabic"
         page=get_page_info(page_unique_identifier)
         Thread(target=scrape_page_videos,args=(page.get("page_id_2"),)).start()
         Thread(target=scrape_page_posts, args=(page.get("page_id"),)).start()

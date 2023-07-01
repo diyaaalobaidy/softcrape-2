@@ -151,7 +151,7 @@ class PostRoutes(Resource):
     """
         Facebook post operations
     """
-    @fb_ns.doc("Create a new post")
+    @fb_ns.doc(False)
     @fb_ns.expect(post_field)
     @fb_ns.marshal_with(post_field, code=201)
     def post(self):
@@ -225,7 +225,7 @@ class PagesRoutes(Resource):
     """
         Facebook page operations
     """
-    @fb_ns.doc("Create a new page")
+    @fb_ns.doc(False)
     @fb_ns.expect(page_field)
     @fb_ns.marshal_with(page_field, code=201)
     def post(self):
