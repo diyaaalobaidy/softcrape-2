@@ -96,6 +96,12 @@ class Post(BaseModel):
 class Target(BaseModel):
     target=db.Column(db.String, primary_key=True)
     target_type=db.Column(db.String,default="facebook")
+    
+    def get_json(self):
+        return{
+            "target": self.target,
+            "type": self.target_type
+        }
 
 with app.app_context():
     db.create_all()
@@ -285,7 +291,7 @@ class TrackerRoutes(Resource):
     """
     @tracker_ns.doc("Create a new tracker")
     @tracker_ns.expect(tracker_model)
-    @tracker_ns.marshal_with(tracker_model)
+    @tracker_ns.marshal_list_with(tracker_model)
     def post(self):
         request_data=request.json
         targets=request_data.get("target").split(",")
@@ -294,7 +300,7 @@ class TrackerRoutes(Resource):
             try:
                 Target(target=target, target_type=target_type).save()
             except: pass
-        return targets
+        return [t.get_json() for t in targets]
 
 
     @tracker_ns.doc("Stop a tracker")
