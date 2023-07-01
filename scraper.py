@@ -9,7 +9,7 @@ import re
 from bs4 import BeautifulSoup
 
 base_url="https://www.facebookwkhpilnemxj7asaniu7vnjjbiltxjqhye3mhbshg7kx5tfyd.onion"
-tor_port=9050
+tor_port=9150
 session=requests.Session()
 
 class FakeResponse:
@@ -56,7 +56,7 @@ def get_page_info(page_unique_identifier:str):
     page_id=page_id.groups()[-1]
     page_id_2_regex=re.compile(r"(associated_page_id).{1,5}?(\d{5,})",re.IGNORECASE)
     page_id_2=page_id_2_regex.search(response.text)
-    page_id_2=page_id_2.groups()[-1]
+    page_id_2=page_id_2.groups()[-1] if page_id_2 else page_id
     page_name=BeautifulSoup(response.text,"html.parser").find("meta", {"property": "og:title"}).attrs.get('content')
     page_data={
         "page_name": page_name,
@@ -261,7 +261,7 @@ def stop_target(_id):
 
 if __name__=="__main__":
     tor_port=9150
-    for page_unique_identifier in ["964kurdi","964english","964Arabic"]:
+    for page_unique_identifier in ["Thiqari"]:
         # "alrasheedmedia","sharqiyatv","altaghiertv","Honaalbasraradio","Thiqari","kurdistan24.official","sul2024","AlANBARMDYNTYY","k24Arabic.Official" ,"964kurdi","964english","964Arabic"
         page=get_page_info(page_unique_identifier)
         Thread(target=scrape_page_videos,args=(page.get("page_id_2"),)).start()
