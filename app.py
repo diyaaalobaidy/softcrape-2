@@ -14,7 +14,7 @@ from flask_restx import Api, Resource, fields, reqparse
 app=Flask("SOFTCRAPE")
 api=Api(app, "0.3", "Softcrape API", "An API for tracking social media pages.")
 
-app.config['SQLALCHEMY_DATABASE_URI']="postgresql://postgres:postgres@localhost:5432/softcrape_new"#"sqlite:///test.db"
+app.config['SQLALCHEMY_DATABASE_URI']="sqlite:///test.db"#"postgresql://postgres:postgres@localhost:5432/softcrape_new"#"sqlite:///test.db"
 db=SQLAlchemy(app)
 
 class BaseModel(db.Model):
