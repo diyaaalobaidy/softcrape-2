@@ -1,5 +1,6 @@
 import datetime
 import math
+import sys
 from threading import Thread
 import time
 from typing import List
@@ -13,8 +14,10 @@ from flask_restx import Api, Resource, fields, reqparse
 
 app=Flask("SOFTCRAPE")
 api=Api(app, "0.3", "Softcrape API", "An API for tracking social media pages.")
-
-app.config['SQLALCHEMY_DATABASE_URI']="postgresql://postgres:postgres@localhost:5432/softcrape_new"#"sqlite:///test.db"
+if sys.platform=="linux":
+    app.config['SQLALCHEMY_DATABASE_URI']="postgresql://postgres:postgres@localhost:5432/softcrape_new"
+else:
+    app.config['SQLALCHEMY_DATABASE_URI']="sqlite:///test.db"
 db=SQLAlchemy(app)
 
 class BaseModel(db.Model):
@@ -284,8 +287,8 @@ class PageRoutes(Resource):
 tracker_ns=api.namespace("tracker", description="Tracker operations")
 
 tracker_field=api.model('Tracker', dict(
-    target=fields.String(description="Target to track, for facebook it must be the page id or just the username, not URL."),
-    type=fields.String(description="Target type (lowercase), \"facebook\" for facebook targets.")
+    target=fields.String(default="964Arabic",description="Target to track, for facebook it must be the page id or just the username, not URL."),
+    type=fields.String(default="facebook",description="Target type (lowercase), \"facebook\" for facebook targets.")
 ))
 
 @tracker_ns.route("/")
@@ -374,14 +377,14 @@ def facebook_target_starter(app:Flask):
                 get_page_info(page_identifier)
             except:
                 Target(target=page_identifier, target_type="facebook").save()
-
-scheduler=BackgroundScheduler()
-scheduler.add_job(start_trackers, args=(app,), trigger="interval", seconds=5)
-scheduler.add_job(facebook_target_starter, args=(app,), trigger="interval", seconds=5, max_instances=5)
-scheduler.start()
-number_of_threads=5
-for i in range(number_of_threads):
-    Thread(target=get_next_batch,args=(i,number_of_threads)).start()
+if sys.platform=="linux":
+    scheduler=BackgroundScheduler()
+    scheduler.add_job(start_trackers, args=(app,), trigger="interval", seconds=5)
+    scheduler.add_job(facebook_target_starter, args=(app,), trigger="interval", seconds=5, max_instances=5)
+    scheduler.start()
+    number_of_threads=5
+    for i in range(number_of_threads):
+        Thread(target=get_next_batch,args=(i,number_of_threads)).start()
 
 if __name__=="__main__":
     app.run("localhost",45679)
