@@ -83,7 +83,7 @@ class Post(BaseModel):
 
     def get_json(self) -> dict:
         return {
-            "page": self.page.get_json,
+            "page": self.page.get_json(),
             "page_id": self.page_id,
             "created_at": self.created_at.isoformat(" "),
             "post_id": self.post_id,
