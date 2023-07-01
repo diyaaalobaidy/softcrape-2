@@ -14,7 +14,7 @@ from flask_restx import Api, Resource, fields, reqparse
 app=Flask("SOFTCRAPE")
 api=Api(app, "0.3", "Softcrape API", "An API for tracking social media pages.")
 
-app.config['SQLALCHEMY_DATABASE_URI']="sqlite:///test.db"#"postgresql://postgres:postgres@localhost:5432/softcrape_new"#"sqlite:///test.db"
+app.config['SQLALCHEMY_DATABASE_URI']="postgresql://postgres:postgres@localhost:5432/softcrape_new"#"sqlite:///test.db"
 db=SQLAlchemy(app)
 
 class BaseModel(db.Model):
@@ -279,7 +279,7 @@ class PageRoutes(Resource):
 
 tracker_ns=api.namespace("tracker", description="Tracker operations")
 
-tracker_model=api.model('Tracker', dict(
+tracker_field=api.model('Tracker', dict(
     target=fields.String(description="Target to track, for facebook it must be the page id or just the username, not URL."),
     type=fields.String(description="Target type (lowercase), \"facebook\" for facebook targets.")
 ))
@@ -290,8 +290,8 @@ class TrackerRoutes(Resource):
         Tracker operations
     """
     @tracker_ns.doc("Create a new tracker")
-    @tracker_ns.expect(tracker_model)
-    @tracker_ns.marshal_list_with(tracker_model)
+    @tracker_ns.expect(tracker_field)
+    @tracker_ns.marshal_list_with(tracker_field)
     def post(self):
         request_data=request.json
         targets=request_data.get("target").split(",")
@@ -305,9 +305,23 @@ class TrackerRoutes(Resource):
             except: pass
         return response
 
+    @fb_ns.doc("Get queued trackers")
+    @fb_ns.expect(pagination)
+    @fb_ns.marshal_list_with(tracker_field)
+    def get(self):
+        data=dict(pagination.parse_args(request))
+        page=data.get("page",1) or 1
+        limit=data.get("limit",10) or 10
+        trackers=Target.query.order_by(text("{} {}".format(data.get("sort_by"), "DESC" if data.get("descending")=="true" else "ASC")))
+        total=trackers.count()
+        if limit>0:
+            trackers=trackers.offset((page-1)*(limit)).limit(limit)
+        response=dict(trackers=[page.get_json() for page in trackers], total=total, fetched=trackers.count(), page=page, total_pages=math.ceil(total/limit))
+        return response
+
 
     @tracker_ns.doc("Stop a tracker")
-    @tracker_ns.marshal_with(tracker_model)
+    @tracker_ns.marshal_with(tracker_field)
     def delete(self):
         tracker_id=request.args.get("tracker_id")
         if tracker_id in active_trackers:
