@@ -352,16 +352,19 @@ def start_trackers(app:Flask):
 
 def get_next_batch(start,step,app):
     """Get next values from the iterators"""
-    start_trackers(app)
     print("Starting at {} with step {}".format(start,step))
     i=start
+    start_trackers(app)
     while True:
         trackers=list(active_trackers.values())
         try:
             print(next(trackers[i],None))
             i+=step
-        except StopIteration: pass
-        except IndexError: pass
+        except StopIteration:
+            trackers.pop(i)
+        except IndexError:
+            start_trackers(app)
+            i=start
         except Exception as e:
             print("ERROR:",e, active_trackers)
             time.sleep(5)
