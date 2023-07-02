@@ -33,7 +33,7 @@ def request(*, method="GET", url:str, data={}, headers={}, params={}, json_data=
         else:
             session.proxies=None
             print("requesting to {}".format(url))
-            print(json_data)
+            # print(json_data)
         try:
             return session.request(method=method, url=url, data=data, json=json_data, headers=headers, params=params, timeout=20)
         except:

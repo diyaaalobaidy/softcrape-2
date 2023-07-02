@@ -350,8 +350,9 @@ def start_trackers(app:Flask):
                 active_trackers[page.page_id_2]=scrape_page_videos(page.page_id_2)
                 print(active_trackers)
 
-def get_next_batch(start,step):
+def get_next_batch(start,step,app):
     """Get next values from the iterators"""
+    start_trackers(app)
     print("Starting at {} with step {}".format(start,step))
     i=start
     while True:
@@ -379,12 +380,12 @@ def facebook_target_starter(app:Flask):
                 Target(target=page_identifier, target_type="facebook").save()
 if sys.platform=="linux":
     scheduler=BackgroundScheduler()
-    scheduler.add_job(start_trackers, args=(app,), trigger="interval", seconds=5)
+    # scheduler.add_job(start_trackers, args=(app,), trigger="interval", seconds=5)
     scheduler.add_job(facebook_target_starter, args=(app,), trigger="interval", seconds=5, max_instances=5)
     scheduler.start()
     number_of_threads=5
     for i in range(number_of_threads):
-        Thread(target=get_next_batch,args=(i,number_of_threads)).start()
+        Thread(target=get_next_batch,args=(i,number_of_threads,app)).start()
 
 if __name__=="__main__":
     app.run("localhost",45679)
