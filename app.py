@@ -232,6 +232,29 @@ class PageRoutes(Resource):
         fb_ns.abort(404, "Post with id {} not found".format(post_id))
 
 
+@fb_ns.route("/post/page/<string:page_id>")
+class PagePostsRoutes(Resource):
+    """
+        Single facebook post operations
+    """
+    @fb_ns.doc("Get posts by page_id")
+    @fb_ns.marshal_list_with(post_list_field)
+    @fb_ns.expect(pagination)
+    def get(self, page_id):
+        data=dict(pagination.parse_args(request))
+        page=data.get("page",1) or 1
+        limit=data.get("limit",10) or 10
+        post=Post.query.filter_by(page_id=page_id).order_by(text("{} {}".format(data.get("sort_by"), "DESC" if data.get("descending")=="true" else "ASC")))
+        total=posts.count()
+        if limit>0:
+            posts=posts.offset((page-1)*(limit)).limit(limit)
+        total=posts.count()
+        if limit>0:
+            posts=posts.offset((page-1)*(limit)).limit(limit)
+        response=dict(posts=[post.get_json() for post in posts], total=total, fetched=posts.count(), page=page, total_pages=math.ceil(total/limit))
+        return response
+
+
 
 @fb_ns.route("/page")
 class PagesRoutes(Resource):
