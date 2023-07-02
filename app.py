@@ -244,7 +244,7 @@ class PagePostsRoutes(Resource):
         data=dict(pagination.parse_args(request))
         page=data.get("page",1) or 1
         limit=data.get("limit",10) or 10
-        post=Post.query.filter_by(page_id=page_id).order_by(text("{} {}".format(data.get("sort_by"), "DESC" if data.get("descending")=="true" else "ASC")))
+        posts=Post.query.filter_by(page_id=page_id).order_by(text("{} {}".format(data.get("sort_by"), "DESC" if data.get("descending")=="true" else "ASC")))
         total=posts.count()
         if limit>0:
             posts=posts.offset((page-1)*(limit)).limit(limit)
