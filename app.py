@@ -235,7 +235,7 @@ class PageRoutes(Resource):
 @fb_ns.route("/post/page/<string:page_id>")
 class PagePostsRoutes(Resource):
     """
-        Single facebook post operations
+        Facebook page posts operations
     """
     @fb_ns.doc("Get posts by page_id")
     @fb_ns.marshal_list_with(post_list_field)
