@@ -248,9 +248,6 @@ class PagePostsRoutes(Resource):
         total=posts.count()
         if limit>0:
             posts=posts.offset((page-1)*(limit)).limit(limit)
-        total=posts.count()
-        if limit>0:
-            posts=posts.offset((page-1)*(limit)).limit(limit)
         response=dict(posts=[post.get_json() for post in posts], total=total, fetched=posts.count(), page=page, total_pages=math.ceil(total/limit))
         return response
 
